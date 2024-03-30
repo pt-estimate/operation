@@ -6,6 +6,7 @@ from langchain.prompts import (
     HumanMessagePromptTemplate,
     ChatPromptTemplate,
 )
+from langchain_core.output_parsers import StrOutputParser
 
 dotenv.load_dotenv()
 
@@ -41,4 +42,6 @@ review_prompt_template = ChatPromptTemplate(
 
 chat_model = ChatOpenAI(model="gpt-3.5-turbo-0125", temperature=0)
 
-review_chain = review_prompt_template | chat_model
+# Format output to string rather than AIMessage
+output_parser = StrOutputParser()
+review_chain = review_prompt_template | chat_model | output_parser
