@@ -7,7 +7,11 @@ from langchain.prompts import (
     ChatPromptTemplate,
 )
 from langchain_core.output_parsers import StrOutputParser
+from langchain_community.vectorstores import Chroma
+from langchain_openai import OpenAIEmbeddings
+from langchain.schema.runnable import RunnablePassthrough
 
+REVIEWS_CHROMA_PATH = "chroma_data/"
 dotenv.load_dotenv()
 
 review_template_str = """Your job is to use patient
@@ -42,6 +46,20 @@ review_prompt_template = ChatPromptTemplate(
 
 chat_model = ChatOpenAI(model="gpt-3.5-turbo-0125", temperature=0)
 
+reviews_vector_db = Chroma(
+    persist_directory=REVIEWS_CHROMA_PATH,
+    embedding_function=OpenAIEmbeddings()
+)
+
+reviews_retriever  = reviews_vector_db.as_retriever(k=10)
+
 # Format output to string rather than AIMessage
 output_parser = StrOutputParser()
-review_chain = review_prompt_template | chat_model | output_parser
+# Assigning question to a RunnablePassthrough object ensures the question gets
+# passed unchanged to the next step in the chain.
+review_chain = (
+        {"context": reviews_retriever, "question": RunnablePassthrough()}
+        | review_prompt_template
+        | chat_model
+        | output_parser
+)
